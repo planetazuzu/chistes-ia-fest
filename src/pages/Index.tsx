@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Header from '@/components/Header';
 import JokeDisplay from '@/components/JokeDisplay';
 import JokeButton from '@/components/JokeButton';
@@ -8,6 +8,7 @@ import Footer from '@/components/Footer';
 import NameInput from '@/components/NameInput';
 import { getJokeFromAPI } from '@/services/jokeService';
 import { Joke } from '@/types/joke';
+import VisitCounter from '@/components/VisitCounter';
 
 const Index = () => {
   const [joke, setJoke] = useState<Joke | string>("Pulsa el botón para recibir un chiste");
@@ -15,6 +16,22 @@ const Index = () => {
   const [jokeCount, setJokeCount] = useState<number>(0);
   const [userName, setUserName] = useState<string>("");
   const [hasEnteredName, setHasEnteredName] = useState<boolean>(false);
+  const [visits, setVisits] = useState<number>(0);
+
+  useEffect(() => {
+    // Retrieve current visit count from localStorage
+    const storedVisits = localStorage.getItem('visitCount');
+    let visitCount = storedVisits ? parseInt(storedVisits, 10) : 0;
+    
+    // Increment visit count
+    visitCount += 1;
+    
+    // Store updated count in localStorage
+    localStorage.setItem('visitCount', visitCount.toString());
+    
+    // Update state
+    setVisits(visitCount);
+  }, []);
 
   const handleNameSubmit = (name: string) => {
     setUserName(name);
@@ -64,6 +81,8 @@ const Index = () => {
               <JokeCounter count={jokeCount} />
             </>
           )}
+          
+          <VisitCounter visits={visits} />
         </main>
         
         <Footer />
