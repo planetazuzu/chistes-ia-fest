@@ -1,20 +1,24 @@
 
 import React from 'react';
 import { CopyIcon, CheckIcon } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
+import JokeVoteButtons from './JokeVoteButtons';
+import { Joke } from '@/types/joke';
 
 interface JokeDisplayProps {
-  joke: string;
+  joke: Joke | string;
   isLoading: boolean;
   userName?: string;
+  onVoteSubmitted?: () => void;
 }
 
-const JokeDisplay = ({ joke, isLoading, userName }: JokeDisplayProps) => {
+const JokeDisplay = ({ joke, isLoading, userName, onVoteSubmitted }: JokeDisplayProps) => {
   const { toast } = useToast();
   const [copied, setCopied] = React.useState(false);
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(joke).then(() => {
+    const jokeText = typeof joke === 'string' ? joke : joke.text;
+    navigator.clipboard.writeText(jokeText).then(() => {
       setCopied(true);
       toast({
         title: "¡Copiado al portapapeles!",
@@ -40,6 +44,14 @@ const JokeDisplay = ({ joke, isLoading, userName }: JokeDisplayProps) => {
     return "Pulsa el botón para recibir un chiste";
   };
 
+  // Determinar el texto a mostrar
+  const jokeText = typeof joke === 'string' 
+    ? joke 
+    : joke.text;
+  
+  const isDefaultMessage = jokeText === "Pulsa el botón para recibir un chiste" || 
+                           jokeText === getDefaultMessage();
+
   return (
     <div className="w-full max-w-2xl mx-auto">
       <div className="bg-white rounded-lg shadow-lg p-6 min-h-[180px] flex flex-col justify-center">
@@ -51,10 +63,10 @@ const JokeDisplay = ({ joke, isLoading, userName }: JokeDisplayProps) => {
         ) : (
           <div className="animate-fade-in">
             <p className="text-xl md:text-2xl text-center text-joy-text font-medium">
-              {joke === "Pulsa el botón para recibir un chiste" ? getDefaultMessage() : joke}
+              {isDefaultMessage ? getDefaultMessage() : jokeText}
             </p>
             
-            {joke !== "Pulsa el botón para recibir un chiste" && joke !== getDefaultMessage() && (
+            {!isDefaultMessage && (
               <div className="mt-6 flex justify-center">
                 <button
                   onClick={copyToClipboard}
@@ -74,6 +86,18 @@ const JokeDisplay = ({ joke, isLoading, userName }: JokeDisplayProps) => {
                   )}
                 </button>
               </div>
+            )}
+            
+            {/* Añadir botones de voto si hay un chiste válido y no es un mensaje por defecto */}
+            {!isDefaultMessage && 
+             typeof joke !== 'string' && 
+             userName && 
+             onVoteSubmitted && (
+              <JokeVoteButtons 
+                joke={joke} 
+                userName={userName} 
+                onVoteSubmitted={onVoteSubmitted} 
+              />
             )}
           </div>
         )}

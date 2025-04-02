@@ -1,24 +1,45 @@
 
 import { genericJokes, personalizedJokeTemplates } from "../data/jokes";
+import { Joke, JokeVote } from "../types/joke";
 
-export const getRandomJoke = (): Promise<string> => {
+// Generamos IDs únicos para cada chiste
+const genericJokesWithIds: Joke[] = genericJokes.map((joke, index) => ({
+  id: `generic-${index}`,
+  text: joke,
+  likes: 0,
+  dislikes: 0
+}));
+
+const personalizedJokesWithIds: Joke[] = personalizedJokeTemplates.map((joke, index) => ({
+  id: `personalized-${index}`,
+  text: joke,
+  likes: 0,
+  dislikes: 0
+}));
+
+// Mantenemos un registro de votos en memoria
+const jokeVotes: JokeVote[] = [];
+
+export const getRandomJoke = (): Promise<Joke> => {
   return new Promise((resolve) => {
     // Simulamos un tiempo de carga
     setTimeout(() => {
-      const randomIndex = Math.floor(Math.random() * genericJokes.length);
-      resolve(genericJokes[randomIndex]);
+      const randomIndex = Math.floor(Math.random() * genericJokesWithIds.length);
+      resolve(genericJokesWithIds[randomIndex]);
     }, 1500);
   });
 };
 
 // Function to get a personalized joke with the user's name
-export const getPersonalizedJoke = (name: string): string => {
-  const randomIndex = Math.floor(Math.random() * personalizedJokeTemplates.length);
-  return personalizedJokeTemplates[randomIndex].replace(/{name}/g, name);
+export const getPersonalizedJoke = (name: string): Joke => {
+  const randomIndex = Math.floor(Math.random() * personalizedJokesWithIds.length);
+  const joke = { ...personalizedJokesWithIds[randomIndex] };
+  joke.text = joke.text.replace(/{name}/g, name);
+  return joke;
 };
 
 // Función preparada para cuando se tenga disponible la API
-export const getJokeFromAPI = async (name?: string): Promise<string> => {
+export const getJokeFromAPI = async (name?: string): Promise<Joke> => {
   try {
     // Esta función está comentada ya que la API aún no está disponible
     /* 
@@ -35,7 +56,12 @@ export const getJokeFromAPI = async (name?: string): Promise<string> => {
     }
 
     const data = await response.json();
-    return data.message || "No se pudo obtener un chiste. ¡Inténtalo de nuevo!";
+    return {
+      id: `api-${Date.now()}`,
+      text: data.message || "No se pudo obtener un chiste. ¡Inténtalo de nuevo!",
+      likes: 0,
+      dislikes: 0
+    };
     */
     
     // Mientras tanto, usamos la función mock
@@ -44,13 +70,65 @@ export const getJokeFromAPI = async (name?: string): Promise<string> => {
         if (name) {
           resolve(getPersonalizedJoke(name));
         } else {
-          const randomIndex = Math.floor(Math.random() * genericJokes.length);
-          resolve(genericJokes[randomIndex]);
+          const randomIndex = Math.floor(Math.random() * genericJokesWithIds.length);
+          resolve(genericJokesWithIds[randomIndex]);
         }
       }, 1500);
     });
   } catch (error) {
     console.error("Error fetching joke:", error);
-    return "¡Ups! Parece que nuestro comediante está de descanso. ¡Inténtalo de nuevo!";
+    return {
+      id: `error-${Date.now()}`,
+      text: "¡Ups! Parece que nuestro comediante está de descanso. ¡Inténtalo de nuevo!",
+      likes: 0,
+      dislikes: 0
+    };
   }
+};
+
+// Nueva función para registrar votos
+export const voteForJoke = (joke: Joke, voteType: 'like' | 'dislike', userName: string): Joke => {
+  // Actualizar contadores en el objeto joke
+  if (voteType === 'like') {
+    joke.likes += 1;
+  } else {
+    joke.dislikes += 1;
+  }
+  
+  // Guardar el voto en memoria (simula una base de datos)
+  jokeVotes.push({
+    jokeId: joke.id,
+    type: voteType,
+    userName
+  });
+  
+  console.log('Voto registrado:', { jokeId: joke.id, voteType, userName });
+  console.log('Estado actual de votos:', jokeVotes);
+  
+  // Preparado para integración futura con base de datos:
+  /*
+  // Ejemplo de código para enviar el voto a una API
+  fetch('http://localhost:8000/jokes/vote', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      jokeId: joke.id,
+      voteType,
+      userName
+    }),
+  });
+  */
+  
+  return { ...joke };
+};
+
+// Función para obtener las estadísticas de un chiste
+export const getJokeStats = (jokeId: string): { likes: number, dislikes: number } => {
+  const jokeVotesForThisJoke = jokeVotes.filter(vote => vote.jokeId === jokeId);
+  const likes = jokeVotesForThisJoke.filter(vote => vote.type === 'like').length;
+  const dislikes = jokeVotesForThisJoke.filter(vote => vote.type === 'dislike').length;
+  
+  return { likes, dislikes };
 };

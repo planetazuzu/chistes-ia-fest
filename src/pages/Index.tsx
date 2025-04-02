@@ -7,9 +7,10 @@ import JokeCounter from '@/components/JokeCounter';
 import Footer from '@/components/Footer';
 import NameInput from '@/components/NameInput';
 import { getJokeFromAPI } from '@/services/jokeService';
+import { Joke } from '@/types/joke';
 
 const Index = () => {
-  const [joke, setJoke] = useState<string>("Pulsa el botón para recibir un chiste");
+  const [joke, setJoke] = useState<Joke | string>("Pulsa el botón para recibir un chiste");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [jokeCount, setJokeCount] = useState<number>(0);
   const [userName, setUserName] = useState<string>("");
@@ -35,6 +36,12 @@ const Index = () => {
     }
   };
 
+  const handleVoteSubmitted = () => {
+    // Este callback se ejecuta después de votar
+    // En el futuro, podríamos usarlo para realizar acciones adicionales
+    console.log("Voto registrado con éxito");
+  };
+
   return (
     <div className="min-h-screen bg-joy-yellow flex flex-col items-center px-4">
       <div className="container max-w-4xl mx-auto py-8 flex flex-col items-center">
@@ -45,7 +52,12 @@ const Index = () => {
             <NameInput onNameSubmit={handleNameSubmit} />
           ) : (
             <>
-              <JokeDisplay joke={joke} isLoading={isLoading} userName={userName} />
+              <JokeDisplay 
+                joke={joke} 
+                isLoading={isLoading} 
+                userName={userName} 
+                onVoteSubmitted={handleVoteSubmitted}
+              />
               
               <JokeButton onClick={generateJoke} disabled={isLoading} />
               
