@@ -20,6 +20,9 @@ const personalizedJokesWithIds: Joke[] = personalizedJokeTemplates.map((joke, in
 // Mantenemos un registro de votos en memoria
 const jokeVotes: JokeVote[] = [];
 
+// Tracking joke request counts
+const jokeRequestCounts: Record<string, number> = {};
+
 export const getRandomJoke = (): Promise<Joke> => {
   return new Promise((resolve) => {
     // Simulamos un tiempo de carga
@@ -67,12 +70,18 @@ export const getJokeFromAPI = async (name?: string): Promise<Joke> => {
     // Mientras tanto, usamos la función mock
     return new Promise((resolve) => {
       setTimeout(() => {
+        let joke;
         if (name) {
-          resolve(getPersonalizedJoke(name));
+          joke = getPersonalizedJoke(name);
         } else {
           const randomIndex = Math.floor(Math.random() * genericJokesWithIds.length);
-          resolve(genericJokesWithIds[randomIndex]);
+          joke = genericJokesWithIds[randomIndex];
         }
+        
+        // Increment request count for this joke
+        jokeRequestCounts[joke.id] = (jokeRequestCounts[joke.id] || 0) + 1;
+        
+        resolve(joke);
       }, 1500);
     });
   } catch (error) {
@@ -131,4 +140,21 @@ export const getJokeStats = (jokeId: string): { likes: number, dislikes: number 
   const dislikes = jokeVotesForThisJoke.filter(vote => vote.type === 'dislike').length;
   
   return { likes, dislikes };
+};
+
+// New function to get most requested jokes
+export const getMostRequestedJokes = (limit: number = 5): { joke: Joke, count: number }[] => {
+  const jokesWithCounts = Object.entries(jokeRequestCounts)
+    .map(([jokeId, count]) => {
+      // Find the joke by id
+      const joke = [...genericJokesWithIds, ...personalizedJokesWithIds]
+        .find(j => j.id === jokeId);
+      
+      return joke ? { joke, count } : null;
+    })
+    .filter((item): item is { joke: Joke, count: number } => item !== null)
+    .sort((a, b) => b.count - a.count) // Sort by count desc
+    .slice(0, limit); // Take only the top N
+  
+  return jokesWithCounts;
 };

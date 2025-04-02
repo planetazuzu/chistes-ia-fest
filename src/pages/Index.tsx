@@ -6,9 +6,10 @@ import JokeButton from '@/components/JokeButton';
 import JokeCounter from '@/components/JokeCounter';
 import Footer from '@/components/Footer';
 import NameInput from '@/components/NameInput';
-import { getJokeFromAPI } from '@/services/jokeService';
+import { getJokeFromAPI, getMostRequestedJokes } from '@/services/jokeService';
 import { Joke } from '@/types/joke';
 import VisitCounter from '@/components/VisitCounter';
+import JokeRanking from '@/components/JokeRanking';
 
 const Index = () => {
   const [joke, setJoke] = useState<Joke | string>("Pulsa el botón para recibir un chiste");
@@ -17,6 +18,7 @@ const Index = () => {
   const [userName, setUserName] = useState<string>("");
   const [hasEnteredName, setHasEnteredName] = useState<boolean>(false);
   const [visits, setVisits] = useState<number>(0);
+  const [jokeRanking, setJokeRanking] = useState<{ joke: Joke, count: number }[]>([]);
 
   useEffect(() => {
     // Retrieve current visit count from localStorage
@@ -45,6 +47,10 @@ const Index = () => {
       const newJoke = await getJokeFromAPI(userName);
       setJoke(newJoke);
       setJokeCount(prevCount => prevCount + 1);
+      
+      // Update the ranking after each joke request
+      const updatedRanking = getMostRequestedJokes(5);
+      setJokeRanking(updatedRanking);
     } catch (error) {
       console.error("Error generating joke:", error);
       setJoke("¡Ups! Algo falló. ¿Intentamos de nuevo?");
@@ -79,6 +85,11 @@ const Index = () => {
               <JokeButton onClick={generateJoke} disabled={isLoading} />
               
               <JokeCounter count={jokeCount} />
+              
+              {/* Add the ranking component */}
+              {jokeCount > 0 && (
+                <JokeRanking rankingData={jokeRanking} />
+              )}
             </>
           )}
           
